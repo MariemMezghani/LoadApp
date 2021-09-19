@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         // register the BroadcastReciever
         registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
 
-        button.setOnClickListener {
+        custom_button.setOnClickListener {
             download()
 
         }
@@ -51,11 +51,14 @@ class MainActivity : AppCompatActivity() {
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             // val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            // Reset download state
+            custom_button.buttonState = ButtonState.Completed
             notificationManager.sendNotification("file download is complete", applicationContext)
         }
     }
 
     private fun download() {
+        custom_button.buttonState = ButtonState.Loading
         val request =
                 DownloadManager.Request(Uri.parse(URL))
                         .setTitle(getString(R.string.app_name))
