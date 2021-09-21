@@ -21,8 +21,16 @@ class LoadingButton @JvmOverloads constructor(
     private var defaultText: CharSequence = ""
     private var loadingText: CharSequence = ""
     private var textColor = 0
+    private var defaultColor = 0
+    private var loadingColor = 0
+
+    val textBounds: Rect = Rect()
+
     private var loadingStatus = 0.0f
     private var valueAnimator = ValueAnimator()
+    private var circleAnimator = ValueAnimator()
+    private var arcSweepAngle = 0f
+    private var arcColor = 0
 
 
     //Paint Object for the custom Button
@@ -53,13 +61,28 @@ class LoadingButton @JvmOverloads constructor(
                 valueAnimator.repeatCount = ValueAnimator.INFINITE
                 valueAnimator.start()
 
+                // circle animation
+                circleAnimator = ValueAnimator.ofFloat(0F, 360F, arcSweepAngle).apply {
+                    duration = 1000
+                    addUpdateListener { valueAnimator ->
+                        arcSweepAngle = valueAnimator.animatedValue as Float
+                        valueAnimator.repeatCount = ValueAnimator.INFINITE
+
+                        invalidate()
+                    }
+                    //start()
+                }
+                circleAnimator.start()
+
 
             }
             else -> {
                 buttonText = defaultText.toString()
                 // stop loading animation
                 valueAnimator.cancel()
+                circleAnimator.cancel()
                 loadingStatus = 0.0f
+                arcSweepAngle = 0.0f
                 invalidate()
 
             }
@@ -73,6 +96,10 @@ class LoadingButton @JvmOverloads constructor(
                 set = attrs,
                 attrs = R.styleable.LoadingButton
         ) {
+            defaultColor =
+                    getColor(R.styleable.LoadingButton_defaultColor, 0)
+            loadingColor =
+                    getColor(R.styleable.LoadingButton_loadingColor, 0)
             defaultText =
                     getText(R.styleable.LoadingButton_defaultText)
 
@@ -80,6 +107,7 @@ class LoadingButton @JvmOverloads constructor(
                     getText(R.styleable.LoadingButton_loadingText)
             textColor =
                     getColor(R.styleable.LoadingButton_textColor, 0)
+            arcColor = getColor(R.styleable.LoadingButton_arcColor, 0)
         }.also {
             buttonText = defaultText.toString()
             buttonState = ButtonState.Clicked
@@ -92,24 +120,33 @@ class LoadingButton @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
         // Set the button color based on the loading status?
-        paintButton.color = resources.getColor(R.color.colorPrimary)
+        paintButton.color = defaultColor
 
         // Draw the base button
         canvas?.drawRect(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat(), paintButton)
 
-        // raw the loading rounded filler
-        paintButton.color = resources.getColor(R.color.colorAccent)
+        // draw the loading rounded filler
+        paintButton.color = loadingColor
         canvas?.drawRect(0f, 0f, (width / 2 - widthSize / 2 + loadingStatus).toFloat(), measuredHeight.toFloat(), paintButton)
 
         // Draw the loading labels
         paintButton.color = Color.WHITE
         buttonText.let {
-            var bounds: Rect = Rect()
-            paintButton.getTextBounds(buttonText, 0, buttonText.length, bounds)
-            var textHeight = bounds.height()
+            paintButton.getTextBounds(buttonText, 0, buttonText.length, textBounds)
+            val textHeight = textBounds.height()
             canvas?.drawText(buttonText, width / 2.toFloat(), (height / 2 + textHeight / 2).toFloat(), paintButton)
         }
+        // Draw the circle
+        paintButton.color = arcColor
+        canvas?.drawArc(computeArcBounds(), 0f, arcSweepAngle, true, paintButton)
 
+
+    }
+
+    fun computeArcBounds(): RectF {
+        val arcBounds =
+                RectF((width * 0.85 - 20).toFloat(), (height / 2 - 20).toFloat(), (width * 0.85 + 20).toFloat(), (height / 2 + 20).toFloat())
+        return arcBounds
 
     }
 
