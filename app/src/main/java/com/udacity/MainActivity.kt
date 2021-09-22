@@ -27,21 +27,19 @@ import java.io.File
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
-
     private var downloadID: Long = 0
     private var fileName: String = ""
     private var selectedURL = ""
+    private var status = ""
 
     private lateinit var notificationManager: NotificationManager
-    private lateinit var pendingIntent: PendingIntent
-    private lateinit var action: NotificationCompat.Action
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         binding.lifecycleOwner = this
 
-        setSupportActionBar(toolbar)
+        setSupportActionBar(binding.toolbar)
         // notificationManager instance
         notificationManager = ContextCompat.getSystemService(
                 this,
@@ -82,9 +80,22 @@ class MainActivity : AppCompatActivity() {
     // BroadcastReciever instance
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            // val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
-            // Reset download state
-            custom_button.buttonState = ButtonState.Completed
+            val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
+            if (downloadID == id) {
+                // Reset download state
+                custom_button.buttonState = ButtonState.Completed
+                val query = DownloadManager.Query().setFilterById(id)
+                val downloadManager = context!!.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                val cursor = downloadManager.query(query)
+                if (cursor.moveToFirst()) {
+                    val statusValue = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+                    status = if (statusValue == DownloadManager.STATUS_SUCCESSFUL) {
+                        "success"
+                    } else {
+                        "fail"
+                    }
+                }
+            }
             notificationManager = ContextCompat.getSystemService(applicationContext, NotificationManager::class.java) as NotificationManager
             custom_button.buttonState = ButtonState.Completed
             notificationManager.sendNotification(fileName, applicationContext)
@@ -122,7 +133,7 @@ class MainActivity : AppCompatActivity() {
             val notificationChannel = NotificationChannel(
                     channelId,
                     channelName,
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_HIGH
             )
 
             notificationChannel.enableLights(true)
@@ -134,11 +145,44 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    //extension function to NotificationManager to send notifications
+    fun NotificationManager.sendNotification(message: String, appContext: Context) {
+        // create an Intent with the app context and the MainActivity that will be launched
+        val contentIntent = Intent(appContext, DetailActivity::class.java)
+        contentIntent.putExtra(FILE_NAME, fileName)
+        contentIntent.putExtra(STATUS, status)
+
+
+        // create PendingIntent
+        val contentPendingIntent = PendingIntent.getActivity(
+                appContext,
+                NOTIFICATION_ID,
+                contentIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val builder = NotificationCompat.Builder(appContext, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_assistant_black_24dp)
+                .setContentTitle("Download Complete")
+                .setContentText(message)
+                //set contentIntent
+                .setContentIntent(contentPendingIntent)
+                .setAutoCancel(true)
+                .addAction(0, "click", contentPendingIntent)
+
+        notify(NOTIFICATION_ID, builder.build())
+    }
+
 
     companion object {
-        private const val URL =
-                "https://github.com/udacity/nd940-c3-advanced-android-programming-project-starter/archive/master.zip"
         const val CHANNEL_ID = "channelId"
+
+        // Notification ID.
+        private val NOTIFICATION_ID = 0
+        const val FILE_NAME = "File"
+        const val STATUS = "Status"
+
+
     }
 
 }

@@ -1,7 +1,6 @@
 package com.udacity
 
 import android.animation.ValueAnimator
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
@@ -23,7 +22,6 @@ class LoadingButton @JvmOverloads constructor(
     private var textColor = 0
     private var defaultColor = 0
     private var loadingColor = 0
-
     val textBounds: Rect = Rect()
 
     private var loadingStatus = 0.0f
@@ -41,7 +39,7 @@ class LoadingButton @JvmOverloads constructor(
         typeface = Typeface.DEFAULT
     }
 
-    // And it'll change whenever [buttonState] changes
+    // change whenever buttonState changes
     private var buttonText = ""
 
     var buttonState: ButtonState by Delegates.observable<ButtonState>(ButtonState.Completed) { p, old, new ->
@@ -70,7 +68,6 @@ class LoadingButton @JvmOverloads constructor(
 
                         invalidate()
                     }
-                    //start()
                 }
                 circleAnimator.start()
 
@@ -78,7 +75,7 @@ class LoadingButton @JvmOverloads constructor(
             }
             else -> {
                 buttonText = defaultText.toString()
-                // stop loading animation
+                // stop all animations
                 valueAnimator.cancel()
                 circleAnimator.cancel()
                 loadingStatus = 0.0f
@@ -119,17 +116,17 @@ class LoadingButton @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
-        // Set the button color based on the loading status?
+
         paintButton.color = defaultColor
 
         // Draw the base button
         canvas?.drawRect(0f, 0f, measuredWidth.toFloat(), measuredHeight.toFloat(), paintButton)
 
-        // draw the loading rounded filler
+        // draw the loading filler
         paintButton.color = loadingColor
         canvas?.drawRect(0f, 0f, (width / 2 - widthSize / 2 + loadingStatus).toFloat(), measuredHeight.toFloat(), paintButton)
 
-        // Draw the loading labels
+        // Draw the labels
         paintButton.color = Color.WHITE
         buttonText.let {
             paintButton.getTextBounds(buttonText, 0, buttonText.length, textBounds)
@@ -162,10 +159,6 @@ class LoadingButton @JvmOverloads constructor(
         widthSize = w
         heightSize = h
         setMeasuredDimension(w, h)
-    }
-
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
     }
 
     override fun performClick(): Boolean {
